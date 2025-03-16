@@ -1,5 +1,5 @@
 // components/FlowVisualizer.js
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   MiniMap,
   Background,
@@ -66,23 +66,41 @@ const nodeTypes = {
   removeButton: RemoveButtonNode
 };
 
-const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onClearSystem }) => {
+const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dimensions }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);
+  
+  // If nodes or edges change from props, update the internal state
+  useEffect(() => {
+    if (initialNodes) setNodes(initialNodes);
+    if (initialEdges) setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  
+  // Fit view when nodes change (including when a new system is loaded)
+  useEffect(() => {
+    if (flowInstance.current && nodes.length > 0) {
+      // Slight delay to ensure rendering is complete
+      setTimeout(() => {
+        flowInstance.current.fitView({ padding: 0.2, includeHiddenNodes: true });
+      }, 200);
+    }
+  }, [nodes.length]);
 
   const onInit = useCallback((reactFlowInstance) => {
     flowInstance.current = reactFlowInstance;
     
     // Wait a bit for the nodes to render and then fit view
-    setTimeout(() => {
-      reactFlowInstance.fitView({ padding: 0.2 });
-    }, 200);
-  }, []);
+    if (nodes.length > 0) {
+      setTimeout(() => {
+        reactFlowInstance.fitView({ padding: 0.2, includeHiddenNodes: true });
+      }, 200);
+    }
+  }, [nodes.length]);
 
   const fitView = () => {
     if (flowInstance.current) {
-      flowInstance.current.fitView({ padding: 0.2 });
+      flowInstance.current.fitView({ padding: 0.2, includeHiddenNodes: true });
     }
   };
 
@@ -90,8 +108,8 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onC
     if (flowInstance.current) {
       const dataUrl = flowInstance.current.toImage({
         quality: 1.0, 
-        width: 2400,
-        height: 1200,
+        width: dimensions?.width || 2400,
+        height: dimensions?.height || 1200,
         backgroundColor: '#fcfcfc',
       });
       
@@ -124,7 +142,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onC
         zoomOnScroll={true} 
         panOnScroll={false}
         panOnDrag={true}
-        fitView
+        fitView={false} // Don't automatically fit view, we'll do it in useEffect
         attributionPosition="bottom-right"
         minZoom={0.1}
         maxZoom={2}
@@ -144,8 +162,8 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onC
           },
           zIndex: 9999 // High z-index for edges
         }}
-        edgesFocusable={true} // Makes edges focusable
-        elevateEdgesOnSelect={true} // Elevates edges when selected
+        edgesFocusable={true}
+        elevateEdgesOnSelect={true}
       >
         <MiniMap 
           nodeStrokeWidth={3}
@@ -178,7 +196,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onC
                     borderColor: '#A0B090',
                     backgroundColor: 'rgba(184, 193, 170, 0.08)'
                   },
-                  fontSize: '0.9rem' // Increased font size for button
+                  fontSize: '0.9rem'
                 }}
               >
                 <CenterFocusStrong fontSize="small" />
@@ -198,7 +216,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onC
                     borderColor: '#A0B090',
                     backgroundColor: 'rgba(184, 193, 170, 0.08)'
                   },
-                  fontSize: '0.9rem' // Increased font size for button
+                  fontSize: '0.9rem'
                 }}
               >
                 <Download fontSize="small" />

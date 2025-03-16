@@ -1,5 +1,5 @@
 // App.js
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Box, 
   AppBar, 
@@ -17,13 +17,76 @@ import { Menu, Upload, Close } from '@mui/icons-material';
 import FlowVisualizer from './components/FlowVisualizer';
 import processJsonToFlow from './utils/jsonToFlow';
 
+// Create a unique ID without requiring uuid package
+const generateId = () => `id-${Math.random().toString(36).substring(2, 9)}`;
+
+// Constants for system layout
+const SYSTEM_PADDING_Y = 200; // Padding between systems vertically
+const SYSTEM_START_X = 50;
+const SYSTEM_START_Y = 50;
+
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [flowData, setFlowData] = useState({ nodes: [], edges: [] });
-  const [systemName, setSystemName] = useState('');
+  const [systems, setSystems] = useState([]); // Array of systems
   const [jsonError, setJsonError] = useState('');
   const [jsonInput, setJsonInput] = useState('');
   const drawerWidth = 350;
+  
+  // Store the overall canvas dimensions
+  const [canvasDimensions, setCanvasDimensions] = useState({
+    width: 2000,
+    height: 2000
+  });
+
+  // Combined nodes and edges from all systems for visualization
+  const [combinedFlow, setCombinedFlow] = useState({ nodes: [], edges: [] });
+
+  // Update combined flow whenever systems change
+  useEffect(() => {
+    console.log("Systems updated:", systems.length);
+    
+    if (systems.length === 0) {
+      setCombinedFlow({ nodes: [], edges: [] });
+      return;
+    }
+    
+    // Calculate new canvas dimensions based on all systems
+    let maxWidth = 0;
+    let totalHeight = SYSTEM_START_Y;
+    
+    // First gather all nodes and edges and update canvas dimensions
+    const allNodes = [];
+    const allEdges = [];
+    
+    systems.forEach((system, index) => {
+      console.log(`System ${system.id} at position:`, system.position);
+      
+      // Map positions of all nodes before adding them
+      const mappedNodes = system.nodes.map(node => {
+        // Make a copy of the node to avoid modifying the original
+        return { ...node };
+      });
+      
+      allNodes.push(...mappedNodes);
+      allEdges.push(...system.edges);
+      
+      // Update canvas dimensions
+      maxWidth = Math.max(maxWidth, system.position.x + system.width);
+      totalHeight = system.position.y + system.height + SYSTEM_PADDING_Y;
+    });
+    
+    setCombinedFlow({
+      nodes: allNodes,
+      edges: allEdges
+    });
+    
+    // Update canvas dimensions
+    setCanvasDimensions({
+      width: Math.max(2000, maxWidth + 200), // Add some margin
+      height: Math.max(2000, totalHeight)    // Add some margin
+    });
+    
+  }, [systems]);
 
   const toggleDrawer = () => {
     setDrawerOpen(!drawerOpen);
@@ -64,12 +127,70 @@ function App() {
     }
   };
 
-  // Function to clear the system data
-  const clearSystemData = useCallback(() => {
-    console.log('Clearing system data'); // Debug log
-    setFlowData({ nodes: [], edges: [] });
-    setSystemName('');
-    setJsonInput('');
+  // Calculate position for a new system based on existing systems
+  const calculateSystemPosition = () => {
+    if (systems.length === 0) {
+      return { x: SYSTEM_START_X, y: SYSTEM_START_Y };
+    }
+    
+    // Find the bottom-most system
+    let maxBottom = 0;
+    systems.forEach(system => {
+      const bottom = system.position.y + system.height;
+      if (bottom > maxBottom) {
+        maxBottom = bottom;
+      }
+    });
+    
+    // Position the new system below the bottom-most existing system
+    return { 
+      x: SYSTEM_START_X, 
+      y: maxBottom + SYSTEM_PADDING_Y 
+    };
+  };
+
+  // Function to clear a specific system
+  const clearSystem = useCallback((systemId) => {
+    console.log('Clearing system', systemId);
+    
+    // Remove the specified system
+    setSystems(prevSystems => {
+      const filteredSystems = prevSystems.filter(system => system.id !== systemId);
+      
+      // If we still have systems, reposition them from the top down
+      if (filteredSystems.length > 0) {
+        let currentY = SYSTEM_START_Y;
+        
+        return filteredSystems.map(system => {
+          // Create new position for this system
+          const newPosition = { x: SYSTEM_START_X, y: currentY };
+          
+          // Update position for nodes
+          const updatedNodes = system.nodes.map(node => {
+            if (node.id.endsWith('system-group')) {
+              // For the system group, update its position directly
+              return {
+                ...node,
+                position: newPosition
+              };
+            }
+            return node;
+          });
+          
+          // Update current Y for next system
+          currentY += system.height + SYSTEM_PADDING_Y;
+          
+          // Return updated system
+          return {
+            ...system,
+            position: newPosition,
+            nodes: updatedNodes
+          };
+        });
+      }
+      
+      return filteredSystems;
+    });
   }, []);
 
   const processJsonData = useCallback((jsonData) => {
@@ -78,14 +199,41 @@ function App() {
       return;
     }
     
-    // Pass the clear function directly to processJsonToFlow
-    const processedData = processJsonToFlow(jsonData, clearSystemData);
-    setFlowData(processedData);
-    setSystemName(jsonData.SystemName || 'Unnamed System');
+    // Create a unique ID for this system
+    const systemId = generateId();
     
-    // Close drawer after loading
+    // Calculate position for the new system
+    const position = calculateSystemPosition();
+    console.log(`Calculated position for new system: (${position.x}, ${position.y})`);
+    
+    // Process the JSON with the position
+    const processedData = processJsonToFlow(jsonData, () => clearSystem(systemId), position, systemId);
+    
+    // Add the new system to our list
+    setSystems(prevSystems => [
+      ...prevSystems, 
+      {
+        id: systemId,
+        name: jsonData.SystemName || 'Unnamed System',
+        nodes: processedData.nodes,
+        edges: processedData.edges,
+        position,
+        width: processedData.width,
+        height: processedData.height
+      }
+    ]);
+    
+    // Clear input and close drawer
+    setJsonInput('');
     setDrawerOpen(false);
-  }, [clearSystemData]);
+  }, [clearSystem, systems]);
+
+  // Get a combined name from all systems
+  const getCombinedSystemName = () => {
+    if (systems.length === 0) return 'System Visualizer';
+    if (systems.length === 1) return systems[0].name;
+    return `${systems[0].name} + ${systems.length - 1} more`;
+  };
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -94,10 +242,10 @@ function App() {
         position="fixed" 
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          backgroundColor: '#B8C1AA', // Updated navbar color to B8C1AA
-          color: 'white', // Changed text color for better contrast
+          backgroundColor: '#B8C1AA',
+          color: 'white',
           boxShadow: 'none',
-          borderBottom: '1px solid #A0B090' // Slightly darker border
+          borderBottom: '1px solid #A0B090'
         }}
       >
         <Toolbar variant="dense">
@@ -116,10 +264,10 @@ function App() {
             component="div" 
             sx={{ 
               flexGrow: 1,
-              fontSize: '1.1rem' // Increased font size 
+              fontSize: '1.1rem'
             }}
           >
-            {systemName || 'System Visualizer'}
+            {getCombinedSystemName()} {systems.length > 0 && `(${systems.length} loaded)`}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -187,7 +335,7 @@ function App() {
             sx={{ 
               mb: 2,
               '& .MuiInputBase-input': {
-                fontSize: '0.95rem' // Larger font for the input
+                fontSize: '0.95rem'
               }
             }}
           />
@@ -207,11 +355,41 @@ function App() {
               '&:hover': {
                 backgroundColor: '#A0B090'
               },
-              fontSize: '0.95rem' // Increased font size
+              fontSize: '0.95rem'
             }}
           >
             Load JSON
           </Button>
+          
+          {systems.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', mb: 1 }}>
+                Loaded Systems:
+              </Typography>
+              {systems.map((system, index) => (
+                <Box key={system.id} sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 0.5,
+                  p: 1,
+                  borderRadius: 1,
+                  backgroundColor: '#f5f5f5'
+                }}>
+                  <Typography variant="body2">
+                    {index + 1}. {system.name} ({system.position.x}, {system.position.y})
+                  </Typography>
+                  <Button 
+                    size="small" 
+                    color="error" 
+                    onClick={() => clearSystem(system.id)}
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
       </Drawer>
       
@@ -229,16 +407,17 @@ function App() {
       >
         <Toolbar variant="dense" />
         
-        {flowData.nodes.length > 0 ? (
+        {combinedFlow.nodes.length > 0 ? (
           <FlowVisualizer
-            nodes={flowData.nodes}
-            edges={flowData.edges}
-            onClearSystem={clearSystemData} // Pass the clear function to FlowVisualizer
+            nodes={combinedFlow.nodes}
+            edges={combinedFlow.edges}
+            dimensions={canvasDimensions}
           />
         ) : (
           <Box 
             sx={{ 
               display: 'flex', 
+              flexDirection: 'column',
               justifyContent: 'center', 
               alignItems: 'center', 
               height: 'calc(100vh - 48px)' 

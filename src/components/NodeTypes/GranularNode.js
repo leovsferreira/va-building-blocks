@@ -8,6 +8,7 @@ const GranularNode = ({ data, id }) => {
   const reactFlowInstance = useReactFlow();
   const details = data.details;
   const color = '#B8AAC1'; // Granular node color
+  const systemId = data.systemId; // Get system ID for filtering
   const hasInputs = details.Inputs && details.Inputs.length > 0;
   const hasOutputs = details.Outputs && details.Outputs.length > 0;
   const feedsInto = details.FeedsInto && details.FeedsInto.length > 0;
@@ -23,8 +24,9 @@ const GranularNode = ({ data, id }) => {
 
   // Function to handle hover (highlight connections)
   const handleMouseEnter = useCallback(() => {
-    // Get all edges
+    // Get all edges and nodes
     const edges = reactFlowInstance.getEdges();
+    const nodes = reactFlowInstance.getNodes();
     
     // Get connected edges (incoming and outgoing)
     const connectedEdges = edges.filter(
@@ -38,73 +40,82 @@ const GranularNode = ({ data, id }) => {
       connectedNodeIds.add(edge.target);
     });
     
-    // Update all edges
-    reactFlowInstance.setEdges(
-      edges.map(edge => {
-        if (connectedEdges.some(connectedEdge => connectedEdge.id === edge.id)) {
-          // Highlight connected edge
-          return {
-            ...edge,
-            style: {
-              ...edge.style,
-              stroke: '#ff0072',
-              strokeWidth: 3,
-              opacity: 1,
-              zIndex: 10000
-            },
-            animated: true
-          };
-        }
-        // Hide other edges
+    // Filter edges to only show those from this system
+    const systemEdges = edges.map(edge => {
+      if (connectedEdges.some(connectedEdge => connectedEdge.id === edge.id)) {
+        // Highlight connected edge
         return {
           ...edge,
           style: {
             ...edge.style,
-            opacity: 0, // Fully transparent instead of dimmed
+            stroke: '#ff0072',
+            strokeWidth: 3,
+            opacity: 1,
+            zIndex: 10000
+          },
+          animated: true
+        };
+      }
+      
+      // Only show edges from this system
+      if (edge.data?.systemId === systemId) {
+        return {
+          ...edge,
+          style: {
+            ...edge.style,
+            opacity: 0, // Hide edges in this system
             zIndex: 1
           },
           animated: false
         };
-      })
-    );
+      }
+      
+      // Keep other system edges as they are
+      return edge;
+    });
     
-    // Also highlight connected nodes
-    const allNodes = reactFlowInstance.getNodes();
+    reactFlowInstance.setEdges(systemEdges);
+    
+    // Also highlight connected nodes, but only in this system
     reactFlowInstance.setNodes(
-      allNodes.map(node => {
-        if (node.id === id || (node.type === 'granularNode' && connectedNodeIds.has(node.id))) {
-          // This is either the current node or a connected node
-          return {
-            ...node,
-            style: {
-              ...node.style,
-              opacity: 1,
-              zIndex: 1000
-            }
-          };
+      nodes.map(node => {
+        // Only modify nodes in this system
+        if (node.data?.systemId === systemId) {
+          if (node.id === id || (node.type === 'granularNode' && connectedNodeIds.has(node.id))) {
+            // This is either the current node or a connected node
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                opacity: 1,
+                zIndex: 1000
+              }
+            };
+          }
+          
+          if (node.type === 'granularNode') {
+            // Dim other granular nodes that aren't connected
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                opacity: 0.5
+              }
+            };
+          }
         }
         
-        if (node.type === 'granularNode') {
-          // Dim other granular nodes that aren't connected
-          return {
-            ...node,
-            style: {
-              ...node.style,
-              opacity: 0.5
-            }
-          };
-        }
-        
-        // Don't change other node types (groups, titles, etc)
+        // Don't change other node types or nodes from other systems
         return node;
       })
     );
-  }, [id, reactFlowInstance]);
+  }, [id, reactFlowInstance, systemId]);
 
   // Function to handle mouse leave (reset edge styles)
   const handleMouseLeave = useCallback(() => {
-    // Get all edges
+    // Get all edges and nodes
     const edges = reactFlowInstance.getEdges();
+    const nodes = reactFlowInstance.getNodes();
     
     // Reset all edges to original style
     reactFlowInstance.setEdges(
@@ -121,9 +132,8 @@ const GranularNode = ({ data, id }) => {
     );
     
     // Reset all nodes
-    const allNodes = reactFlowInstance.getNodes();
     reactFlowInstance.setNodes(
-      allNodes.map(node => {
+      nodes.map(node => {
         if (node.type === 'granularNode') {
           return {
             ...node,

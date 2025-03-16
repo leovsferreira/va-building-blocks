@@ -5,8 +5,8 @@ const RemoveButtonNode = ({ data }) => {
   // Directly call the provided callback function on click
   const handleRemoveSystem = () => {
     if (data.onRemove && typeof data.onRemove === 'function') {
-      if (window.confirm('Are you sure you want to remove the current system?')) {
-        data.onRemove();
+      if (window.confirm(`Are you sure you want to remove this system?`)) {
+        data.onRemove(data.systemId); // Pass the system ID
       }
     }
   };
