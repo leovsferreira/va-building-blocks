@@ -1,5 +1,5 @@
 // utils/jsonToFlow.js
-const processJsonToFlow = (jsonData) => {
+const processJsonToFlow = (jsonData, onRemoveSystem) => {
     if (!jsonData || !jsonData.HighestLevelBlocks) {
       return { nodes: [], edges: [] };
     }
@@ -153,6 +153,29 @@ const processJsonToFlow = (jsonData) => {
       },
       data: {
         label: jsonData.SystemName || 'System'
+      },
+      sourcePosition: null,
+      targetPosition: null
+    });
+    
+    // Add remove button at the top right with direct reference to callback
+    nodes.push({
+      id: 'remove-system-button',
+      type: 'removeButton', // Custom node type
+      position: { x: totalSystemWidth - 45, y: 10 }, // Position at top right, with some margin
+      parentNode: systemGroupId,
+      selectable: false,
+      draggable: false,
+      connectable: false,
+      data: {
+        label: '×',
+        onRemove: onRemoveSystem // Directly pass the callback function
+      },
+      style: {
+        width: 36,
+        height: 36,
+        zIndex: 10000,
+        pointerEvents: 'all'
       },
       sourcePosition: null,
       targetPosition: null

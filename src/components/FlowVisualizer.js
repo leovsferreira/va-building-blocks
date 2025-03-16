@@ -14,6 +14,7 @@ import { CenterFocusStrong, Download } from '@mui/icons-material';
 
 // Import custom node types
 import GranularNode from './NodeTypes/GranularNode';
+import RemoveButtonNode from './NodeTypes/RemoveButtonNode';
 
 // Custom styling to ensure edges are always on top and increase font size globally
 const customStyles = `
@@ -52,13 +53,20 @@ const customStyles = `
     opacity: 1;
     pointer-events: all;
   }
+  
+  /* Important fix for the remove button */
+  .react-flow__node-removeButton {
+    pointer-events: all !important;
+    z-index: 10000 !important;
+  }
 `;
 
 const nodeTypes = {
   granularNode: GranularNode,
+  removeButton: RemoveButtonNode
 };
 
-const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges }) => {
+const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, onClearSystem }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);

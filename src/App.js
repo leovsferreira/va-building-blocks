@@ -64,19 +64,28 @@ function App() {
     }
   };
 
+  // Function to clear the system data
+  const clearSystemData = useCallback(() => {
+    console.log('Clearing system data'); // Debug log
+    setFlowData({ nodes: [], edges: [] });
+    setSystemName('');
+    setJsonInput('');
+  }, []);
+
   const processJsonData = useCallback((jsonData) => {
     if (!jsonData || !jsonData.HighestLevelBlocks) {
       setJsonError('Invalid JSON structure: Missing HighestLevelBlocks');
       return;
     }
     
-    const processedData = processJsonToFlow(jsonData);
+    // Pass the clear function directly to processJsonToFlow
+    const processedData = processJsonToFlow(jsonData, clearSystemData);
     setFlowData(processedData);
     setSystemName(jsonData.SystemName || 'Unnamed System');
     
     // Close drawer after loading
     setDrawerOpen(false);
-  }, []);
+  }, [clearSystemData]);
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -102,16 +111,16 @@ function App() {
             <Menu />
           </IconButton>
           <Typography 
-          variant="h6" 
-          noWrap 
-          component="div" 
-          sx={{ 
-            flexGrow: 1, 
-            fontSize: '1.1rem' // Increased font size 
-          }}
-        >
-          {systemName || 'VA Building Blocks'}
-        </Typography>
+            variant="h6" 
+            noWrap 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              fontSize: '1.1rem' // Increased font size 
+            }}
+          >
+            {systemName || 'System Visualizer'}
+          </Typography>
         </Toolbar>
       </AppBar>
       
@@ -141,7 +150,7 @@ function App() {
           
           <Divider sx={{ mb: 3 }} />
           
-          <Typography variant="subtitle1" gutterBottom sx={{ fontSize: '1rem' }}>Or Paste JSON</Typography>
+          <Typography variant="subtitle1" gutterBottom>Upload JSON File</Typography>
           <Button
             variant="outlined"
             component="label"
@@ -154,7 +163,8 @@ function App() {
               '&:hover': {
                 borderColor: '#A0B090',
                 backgroundColor: 'rgba(184, 193, 170, 0.08)'
-              }
+              },
+              fontSize: '0.95rem'
             }}
           >
             Select JSON File
@@ -166,7 +176,7 @@ function App() {
             />
           </Button>
           
-          <Typography variant="subtitle1" gutterBottom>Or Paste JSON</Typography>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontSize: '1rem' }}>Or Paste JSON</Typography>
           <TextField
             label="Paste JSON here"
             multiline
@@ -181,7 +191,7 @@ function App() {
               }
             }}
           />
-
+          
           {jsonError && (
             <Typography color="error" variant="body2" sx={{ mb: 2, fontSize: '0.9rem' }}>
               {jsonError}
@@ -220,7 +230,11 @@ function App() {
         <Toolbar variant="dense" />
         
         {flowData.nodes.length > 0 ? (
-          <FlowVisualizer nodes={flowData.nodes} edges={flowData.edges} />
+          <FlowVisualizer
+            nodes={flowData.nodes}
+            edges={flowData.edges}
+            onClearSystem={clearSystemData} // Pass the clear function to FlowVisualizer
+          />
         ) : (
           <Box 
             sx={{ 
@@ -230,12 +244,12 @@ function App() {
               height: 'calc(100vh - 48px)' 
             }}
           >
-          <Paper elevation={0} sx={{ p: 4, textAlign: 'center', maxWidth: 400, backgroundColor: 'transparent' }}>
-            <Typography variant="h5" gutterBottom sx={{ fontSize: '1.3rem' }}>No Data Loaded</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem' }}>
-              Click the menu icon in the top left to open the side panel and load a JSON file.
-            </Typography>
-          </Paper>
+            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', maxWidth: 400, backgroundColor: 'transparent' }}>
+              <Typography variant="h5" gutterBottom sx={{ fontSize: '1.3rem' }}>No Data Loaded</Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem' }}>
+                Click the menu icon in the top left to open the side panel and load a JSON file.
+              </Typography>
+            </Paper>
           </Box>
         )}
       </Box>
