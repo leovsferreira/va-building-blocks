@@ -9,6 +9,7 @@ const processJsonToFlow = (jsonData) => {
     
     // Base colors
     const colors = {
+      system: '#B8C1AA', // System color (same as navbar)
       highLevel: '#C1B8AA', // Higher level block color
       intermediate: '#AAB8C1', // Intermediate block color
       granular: '#B8AAC1' // Granular block color
@@ -25,6 +26,7 @@ const processJsonToFlow = (jsonData) => {
     
     // Darker colors for title backgrounds
     const titleColors = {
+      system: getDarkerColor(colors.system, 20),
       highLevel: getDarkerColor(colors.highLevel, 20),
       intermediate: getDarkerColor(colors.intermediate, 20),
       granular: getDarkerColor(colors.granular, 20)
@@ -32,6 +34,7 @@ const processJsonToFlow = (jsonData) => {
     
     // Even darker colors for borders
     const borderColors = {
+      system: getDarkerColor(colors.system, 40),
       highLevel: getDarkerColor(colors.highLevel, 40),
       intermediate: getDarkerColor(colors.intermediate, 40),
       granular: getDarkerColor(colors.granular, 40)
@@ -47,10 +50,116 @@ const processJsonToFlow = (jsonData) => {
       });
     });
     
-    // Starting positions for the highest level blocks
+    // Analyze all blocks first to determine the overall size needed for the system group
+    let totalSystemWidth = 0;
+    let totalSystemHeight = 0;
+    const highLevelDetails = [];
+    
+    // Starting positions for the highest level blocks - used for calculations first
     let highestLevelXPosition = 50;
     const highestLevelYPosition = 50;
     const highestLevelXGap = 150; // Gap between highest level blocks
+    
+    // First pass - calculate sizes of all blocks to determine system group size
+    jsonData.HighestLevelBlocks.forEach((highBlock) => {
+      const intermediateDetails = [];
+      
+      if (highBlock.IntermediateBlocks) {
+        highBlock.IntermediateBlocks.forEach((intBlock) => {
+          const granularBlockCount = intBlock.GranularBlocks?.length || 0;
+          
+          // Add data for each intermediate block
+          intermediateDetails.push({
+            granularCount: granularBlockCount,
+            height: granularBlockCount === 0 ? 120 : (granularBlockCount * 130 + 60),
+            width: 250
+          });
+        });
+      }
+      
+      // Calculate high level dimensions
+      const highLevelWidth = intermediateDetails.length > 0 
+        ? Math.max(350, ...intermediateDetails.map(d => d.width)) + 80 
+        : 350;
+      
+      const totalHeight = intermediateDetails.reduce((sum, detail) => sum + detail.height + 30, 0);
+      const highLevelHeight = Math.max(180, totalHeight + 60);
+      
+      highLevelDetails.push({
+        width: highLevelWidth,
+        height: highLevelHeight,
+        xPosition: highestLevelXPosition
+      });
+      
+      // Move position for next block calculation
+      highestLevelXPosition += highLevelWidth + highestLevelXGap;
+    });
+    
+    // Calculate total system size - find the rightmost edge and bottom edge
+    if (highLevelDetails.length > 0) {
+      const lastHighLevelBlock = highLevelDetails[highLevelDetails.length - 1];
+      totalSystemWidth = lastHighLevelBlock.xPosition + lastHighLevelBlock.width + 50; // Add padding
+      totalSystemHeight = Math.max(...highLevelDetails.map(d => d.height)) + highestLevelYPosition + 50; // Add padding
+    } else {
+      totalSystemWidth = 500; // Default size if no blocks
+      totalSystemHeight = 300;
+    }
+    
+    // Create the system group that encompasses everything
+    const systemGroupId = 'system-group';
+    nodes.push({
+      id: systemGroupId,
+      type: 'group',
+      position: { x: 0, y: 0 },
+      style: { 
+        width: totalSystemWidth, 
+        height: totalSystemHeight,
+        backgroundColor: 'transparent',
+        borderColor: colors.system,
+        borderWidth: 5, // 1px thicker than high level groups (4px)
+        borderStyle: 'solid', // Straight lines, not dashed
+        borderRadius: 10,
+        padding: 0
+      },
+      data: { 
+        label: jsonData.SystemName || 'System',
+        level: 'system'
+      }
+    });
+    
+    // Add title for the system group
+    nodes.push({
+      id: 'system-label',
+      type: 'default',
+      position: { x: 0, y: 0 },
+      parentNode: systemGroupId,
+      selectable: false,
+      draggable: false,
+      connectable: false,
+      style: {
+        backgroundColor: titleColors.system,
+        color: 'white',
+        padding: '8px 16px',
+        borderBottomRightRadius: '8px',
+        borderTopLeftRadius: '10px',
+        borderRight: `2px solid ${borderColors.system}`,
+        borderBottom: `2px solid ${borderColors.system}`,
+        fontWeight: 'bold',
+        width: 'auto',
+        minWidth: '180px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        zIndex: 999,
+        fontSize: '1rem' // Slightly larger than high level blocks
+      },
+      data: {
+        label: jsonData.SystemName || 'System'
+      },
+      sourcePosition: null,
+      targetPosition: null
+    });
+    
+    // Reset the position for actual creation of high level blocks
+    highestLevelXPosition = 50;
     
     // Process all highest level blocks
     jsonData.HighestLevelBlocks.forEach((highBlock, highIndex) => {
@@ -64,16 +173,13 @@ const processJsonToFlow = (jsonData) => {
           // Add data for each intermediate block
           intermediateDetails.push({
             granularCount: granularBlockCount,
-            // More compact sizing: Each granular block only needs ~130px vertical space
             height: granularBlockCount === 0 ? 120 : (granularBlockCount * 130 + 60),
-            // More compact width
             width: 250
           });
         });
       }
       
       // Calculate high level dimensions based on intermediates
-      // Width is based on intermediate width + padding
       const highLevelWidth = intermediateDetails.length > 0 
         ? Math.max(350, ...intermediateDetails.map(d => d.width)) + 80 
         : 350;
@@ -82,7 +188,7 @@ const processJsonToFlow = (jsonData) => {
       const totalHeight = intermediateDetails.reduce((sum, detail) => sum + detail.height + 30, 0);
       const highLevelHeight = Math.max(180, totalHeight + 60);
       
-      // Add group for highest level block
+      // Add group for highest level block - now a child of the system group
       const highLevelGroupId = `high-group-${highIndex}`;
       nodes.push({
         id: highLevelGroupId,
@@ -98,6 +204,7 @@ const processJsonToFlow = (jsonData) => {
           borderRadius: 8,
           padding: 0
         },
+        parentNode: systemGroupId, // Make it a child of the system group
         data: { 
           label: highBlock.HighestLevelBlockName,
           level: 'highest'
