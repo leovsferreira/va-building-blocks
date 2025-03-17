@@ -131,7 +131,8 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
       label: jsonData.SystemName || 'System',
       level: 'system',
       systemId: systemId
-    }
+    },
+    draggable: true, // Make only system groups draggable
   });
   
   // Add title for the system group
@@ -182,6 +183,26 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
     style: {
       width: 36,
       height: 36,
+      zIndex: 10000,
+      pointerEvents: 'all'
+    },
+    sourcePosition: null,
+    targetPosition: null
+  });
+  
+  // Add drag handle at the top left
+  nodes.push({
+    id: prefixId('drag-handle'),
+    type: 'dragHandle', // Custom node type
+    position: { x: 0, y: 0 }, // Position at top left corner
+    parentNode: systemGroupId,
+    selectable: false,
+    draggable: false,
+    connectable: false,
+    data: {
+      systemId: systemId
+    },
+    style: {
       zIndex: 10000,
       pointerEvents: 'all'
     },

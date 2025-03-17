@@ -1,5 +1,5 @@
 // components/FlowVisualizer.js
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import ReactFlow, {
   MiniMap,
   Background,
@@ -15,6 +15,7 @@ import { CenterFocusStrong, Download } from '@mui/icons-material';
 // Import custom node types
 import GranularNode from './NodeTypes/GranularNode';
 import RemoveButtonNode from './NodeTypes/RemoveButtonNode';
+import DragHandleNode from './NodeTypes/DragHandleNode';
 
 // Custom styling to ensure edges are always on top and increase font size globally
 const customStyles = `
@@ -55,7 +56,8 @@ const customStyles = `
   }
   
   /* Important fix for the remove button */
-  .react-flow__node-removeButton {
+  .react-flow__node-removeButton,
+  .react-flow__node-dragHandle {
     pointer-events: all !important;
     z-index: 10000 !important;
   }
@@ -63,10 +65,11 @@ const customStyles = `
 
 const nodeTypes = {
   granularNode: GranularNode,
-  removeButton: RemoveButtonNode
+  removeButton: RemoveButtonNode,
+  dragHandle: DragHandleNode
 };
 
-const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dimensions }) => {
+const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dimensions, onSystemPositionUpdate }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);
@@ -86,6 +89,121 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
       }, 200);
     }
   }, [nodes.length]);
+
+  // Store dragging state
+  const [dragState, setDragState] = useState(null);
+
+  // Get all system group nodes
+  const getSystemNodes = useCallback(() => {
+    return nodes.filter(node => 
+      node.type === 'group' && 
+      node.id.includes('system-group')
+    );
+  }, [nodes]);
+
+  // Detect if a system would overlap with another system
+  const detectCollision = useCallback((draggingNode, newPos) => {
+    if (!draggingNode) return false;
+    
+    // Calculate the potential new bounding box for the dragging system
+    const dragRect = {
+      x: newPos.x,
+      y: newPos.y,
+      width: draggingNode.style.width,
+      height: draggingNode.style.height
+    };
+    
+    // Get all other system nodes
+    const otherSystems = getSystemNodes().filter(
+      node => node.id !== draggingNode.id
+    );
+    
+    // Check for collisions with each other system
+    for (const otherSystem of otherSystems) {
+      const otherRect = {
+        x: otherSystem.position.x,
+        y: otherSystem.position.y,
+        width: otherSystem.style.width,
+        height: otherSystem.style.height
+      };
+      
+      // Simple rectangle-rectangle collision detection
+      if (
+        dragRect.x < otherRect.x + otherRect.width &&
+        dragRect.x + dragRect.width > otherRect.x &&
+        dragRect.y < otherRect.y + otherRect.height &&
+        dragRect.y + dragRect.height > otherRect.y
+      ) {
+        return true; // Collision detected
+      }
+    }
+    
+    return false; // No collision
+  }, [getSystemNodes]);
+
+  // Handle node drag start
+  const onNodeDragStart = useCallback((event, node) => {
+    // Only track drag state for system group nodes
+    if (node.type === 'group' && node.id.includes('system-group')) {
+      setDragState({
+        id: node.id,
+        node: node,
+        originalPosition: { ...node.position },
+        lastValidPosition: { ...node.position }
+      });
+    }
+  }, []);
+
+  // Handle node dragging
+  const onNodeDrag = useCallback((event, node, nodes) => {
+    if (!dragState || dragState.id !== node.id) return;
+    
+    // Check if new position would cause collision
+    const hasCollision = detectCollision(node, node.position);
+    
+    // If no collision, update the last valid position
+    if (!hasCollision) {
+      setDragState(prev => ({
+        ...prev,
+        lastValidPosition: { ...node.position }
+      }));
+    }
+  }, [dragState, detectCollision]);
+
+  // Handle node drag end
+  const onNodeDragStop = useCallback((event, node) => {
+    if (!dragState || dragState.id !== node.id) return;
+    
+    const systemId = node.data.systemId;
+    if (!systemId) return;
+    
+    // Check final position for collision
+    const hasCollision = detectCollision(node, node.position);
+    
+    if (hasCollision) {
+      // Revert to last valid position if collision occurred
+      setNodes(prevNodes => 
+        prevNodes.map(n => 
+          n.id === node.id 
+            ? { ...n, position: { ...dragState.lastValidPosition } }
+            : n
+        )
+      );
+      
+      // Notify App component with the last valid position
+      if (onSystemPositionUpdate) {
+        onSystemPositionUpdate(systemId, dragState.lastValidPosition);
+      }
+    } else {
+      // Notify App component with the new position
+      if (onSystemPositionUpdate) {
+        onSystemPositionUpdate(systemId, node.position);
+      }
+    }
+    
+    // Clear drag state
+    setDragState(null);
+  }, [dragState, detectCollision, setNodes, onSystemPositionUpdate]);
 
   const onInit = useCallback((reactFlowInstance) => {
     flowInstance.current = reactFlowInstance;
@@ -135,10 +253,13 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         onInit={onInit}
-        nodesDraggable={false}
+        nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
         selectNodesOnDrag={false}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDrag={onNodeDrag}
+        onNodeDragStop={onNodeDragStop}
         zoomOnScroll={true} 
         panOnScroll={false}
         panOnDrag={true}

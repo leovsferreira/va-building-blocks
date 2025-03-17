@@ -192,6 +192,36 @@ function App() {
       return filteredSystems;
     });
   }, []);
+  
+  // Handler for system position updates from drag and drop
+  const handleSystemPositionUpdate = useCallback((systemId, newPosition) => {
+    console.log(`Updating system ${systemId} position to:`, newPosition);
+    
+    setSystems(prevSystems => 
+      prevSystems.map(system => {
+        if (system.id !== systemId) return system;
+        
+        // Update the system position
+        const updatedNodes = system.nodes.map(node => {
+          if (node.id.endsWith('system-group')) {
+            // Update system group node position
+            return {
+              ...node,
+              position: newPosition
+            };
+          }
+          return node;
+        });
+        
+        // Return updated system
+        return {
+          ...system,
+          position: newPosition,
+          nodes: updatedNodes
+        };
+      })
+    );
+  }, []);
 
   const processJsonData = useCallback((jsonData) => {
     if (!jsonData || !jsonData.HighestLevelBlocks) {
@@ -412,6 +442,7 @@ function App() {
             nodes={combinedFlow.nodes}
             edges={combinedFlow.edges}
             dimensions={canvasDimensions}
+            onSystemPositionUpdate={handleSystemPositionUpdate}
           />
         ) : (
           <Box 
