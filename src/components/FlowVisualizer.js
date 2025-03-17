@@ -43,6 +43,16 @@ const customStyles = `
     font-size: 14px;
   }
   
+  /* Only allow system groups to be dragged */
+  .react-flow__node-group:not([data-id*="system-group"]) {
+    pointer-events: none !important;
+  }
+  
+  /* Allow clicks on content inside non-system groups */
+  .react-flow__node-group:not([data-id*="system-group"]) * {
+    pointer-events: auto;
+  }
+  
   /* Hide default handles on non-granular nodes */
   .react-flow__handle {
     opacity: 0;
@@ -74,9 +84,24 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);
   
-  // If nodes or edges change from props, update the internal state
+  // Filter nodes that shouldn't be draggable directly
   useEffect(() => {
-    if (initialNodes) setNodes(initialNodes);
+    if (initialNodes) {
+      // Make sure only system-group nodes are draggable, not the inner components
+      const filteredNodes = initialNodes.map(node => {
+        // Only system groups should be draggable
+        if (node.type === 'group') {
+          // Only make system-group nodes draggable
+          return {
+            ...node,
+            draggable: node.id.includes('system-group')
+          };
+        }
+        return node;
+      });
+      setNodes(filteredNodes);
+    }
+    
     if (initialEdges) setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
   
@@ -143,7 +168,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
 
   // Handle node drag start
   const onNodeDragStart = useCallback((event, node) => {
-    // Only track drag state for system group nodes
+    // Only track drag state for system group nodes (not high-level or intermediate groups)
     if (node.type === 'group' && node.id.includes('system-group')) {
       setDragState({
         id: node.id,

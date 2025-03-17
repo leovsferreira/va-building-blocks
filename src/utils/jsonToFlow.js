@@ -256,6 +256,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
         borderRadius: 8,
         padding: 0
       },
+      draggable: false, // Explicitly set high level blocks to be non-draggable
       parentNode: systemGroupId, // Make it a child of the system group
       data: { 
         label: highBlock.HighestLevelBlockName,
