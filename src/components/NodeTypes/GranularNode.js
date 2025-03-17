@@ -293,6 +293,17 @@ const GranularNode = ({ data, id }) => {
               </Box>
             </Box>
           )}
+          
+          {details.ReferenceCitation && (
+            <Box sx={{ mt: 1.5 }}>
+              <Typography variant="body2" fontWeight={600} sx={{ color: '#333', mb: 0.5, fontSize: '0.85rem' }}>Reference Citation:</Typography>
+              <Box sx={{ backgroundColor: '#f8f8f8', p: 1, borderRadius: '4px', borderLeft: '3px solid #ddd' }}>
+                <Typography variant="body2" sx={{ color: '#444', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                  {details.ReferenceCitation}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Paper>
       </Popover>
       

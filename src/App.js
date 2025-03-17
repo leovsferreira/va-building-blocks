@@ -226,9 +226,7 @@ function App() {
 
   // Get a combined name from all systems
   const getCombinedSystemName = () => {
-    if (systems.length === 0) return 'System Visualizer';
-    if (systems.length === 1) return systems[0].name;
-    return `${systems[0].name} + ${systems.length - 1} more`;
+    return 'VA Building Blocks';
   };
 
   return (
