@@ -149,48 +149,14 @@ function App() {
     };
   };
 
-  // Function to clear a specific system
+  // Function to clear a specific system without repositioning others
   const clearSystem = useCallback((systemId) => {
     console.log('Clearing system', systemId);
     
-    // Remove the specified system
-    setSystems(prevSystems => {
-      const filteredSystems = prevSystems.filter(system => system.id !== systemId);
-      
-      // If we still have systems, reposition them from the top down
-      if (filteredSystems.length > 0) {
-        let currentY = SYSTEM_START_Y;
-        
-        return filteredSystems.map(system => {
-          // Create new position for this system
-          const newPosition = { x: SYSTEM_START_X, y: currentY };
-          
-          // Update position for nodes
-          const updatedNodes = system.nodes.map(node => {
-            if (node.id.endsWith('system-group')) {
-              // For the system group, update its position directly
-              return {
-                ...node,
-                position: newPosition
-              };
-            }
-            return node;
-          });
-          
-          // Update current Y for next system
-          currentY += system.height + SYSTEM_PADDING_Y;
-          
-          // Return updated system
-          return {
-            ...system,
-            position: newPosition,
-            nodes: updatedNodes
-          };
-        });
-      }
-      
-      return filteredSystems;
-    });
+    // Simply remove the specified system without repositioning others
+    setSystems(prevSystems => 
+      prevSystems.filter(system => system.id !== systemId)
+    );
   }, []);
   
   // Handler for system position updates from drag and drop
