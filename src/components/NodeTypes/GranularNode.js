@@ -43,18 +43,33 @@ const GranularNode = ({ data, id }) => {
     // Filter edges to only show those from this system
     const systemEdges = edges.map(edge => {
       if (connectedEdges.some(connectedEdge => connectedEdge.id === edge.id)) {
-        // Highlight connected edge
-        return {
+        // Highlight connected edge - use appropriate color based on source node's group
+        const sourceNode = nodes.find(node => node.id === edge.source);
+        const sourceIsInteraction = sourceNode?.data?.highLevelGroup === 'Interaction';
+        const edgeHighlightColor = sourceIsInteraction ? '#00ff8d' : '#ff0072';
+        
+        const highlightedEdge = {
           ...edge,
           style: {
             ...edge.style,
-            stroke: '#ff0072',
+            stroke: edgeHighlightColor,
             strokeWidth: 3,
             opacity: 1,
             zIndex: 10000
           },
-          animated: true
+          // Keep the edge animation setting based on whether it's from an Interaction node
+          animated: sourceIsInteraction ? false : true,
         };
+        
+        // Only add markerEnd for non-Interaction edges
+        if (!sourceIsInteraction && edge.markerEnd) {
+          highlightedEdge.markerEnd = {
+            ...edge.markerEnd,
+            color: edgeHighlightColor
+          };
+        }
+        
+        return highlightedEdge;
       }
       
       // Only show edges from this system
@@ -63,7 +78,7 @@ const GranularNode = ({ data, id }) => {
           ...edge,
           style: {
             ...edge.style,
-            opacity: 0, // Hide edges in this system
+            opacity: 0.15, // Dim edges in this system (changed from 0 to 0.15 for better visibility)
             zIndex: 1
           },
           animated: false
@@ -117,18 +132,35 @@ const GranularNode = ({ data, id }) => {
     const edges = reactFlowInstance.getEdges();
     const nodes = reactFlowInstance.getNodes();
     
-    // Reset all edges to original style
+    // Reset all edges to original style based on their source node
     reactFlowInstance.setEdges(
-      edges.map(edge => ({
-        ...edge,
-        style: {
-          stroke: '#555',
-          strokeWidth: 1.5,
-          opacity: 1,
-          zIndex: 9999
-        },
-        animated: true
-      }))
+      edges.map(edge => {
+        const sourceNode = nodes.find(node => node.id === edge.source);
+        const isInteractionEdge = sourceNode?.data?.highLevelGroup === 'Interaction';
+        
+        const resetEdge = {
+          ...edge,
+          style: {
+            stroke: '#555',
+            strokeWidth: 1.5,
+            opacity: 1,
+            zIndex: 9999
+          },
+          animated: isInteractionEdge ? false : true
+        };
+        
+        // Only add markerEnd for non-Interaction edges
+        if (!isInteractionEdge && (edge.markerEnd || !isInteractionEdge)) {
+          resetEdge.markerEnd = {
+            type: 'arrowclosed',
+            color: '#555',
+            width: 10,
+            height: 10
+          };
+        }
+        
+        return resetEdge;
+      })
     );
     
     // Reset all nodes

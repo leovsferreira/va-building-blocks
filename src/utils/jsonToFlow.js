@@ -215,6 +215,10 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
   
   // Process all highest level blocks
   jsonData.HighestLevelBlocks.forEach((highBlock, highIndex) => {
+    // Store high level block name for reference
+    const highLevelGroupName = highBlock.HighestLevelBlockName;
+    const isInteractionGroup = highLevelGroupName === 'Interaction';
+    
     // First, analyze intermediate blocks for better sizing
     const intermediateDetails = [];
     
@@ -259,7 +263,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
       draggable: false, // Explicitly set high level blocks to be non-draggable
       parentNode: systemGroupId, // Make it a child of the system group
       data: { 
-        label: highBlock.HighestLevelBlockName,
+        label: highLevelGroupName,
         level: 'highest',
         systemId: systemId
       }
@@ -290,7 +294,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
         fontSize: '0.95rem' // Increased font size
       },
       data: {
-        label: highBlock.HighestLevelBlockName,
+        label: highLevelGroupName,
         systemId: systemId
       },
       // Hide all handles
@@ -334,7 +338,8 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
           data: { 
             label: intBlock.IntermediateBlockName,
             level: 'intermediate',
-            systemId: systemId
+            systemId: systemId,
+            highLevelGroup: highLevelGroupName
           }
         });
         
@@ -364,7 +369,8 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
           },
           data: {
             label: intBlock.IntermediateBlockName,
-            systemId: systemId
+            systemId: systemId,
+            highLevelGroup: highLevelGroupName
           },
           // Hide all handles
           sourcePosition: null,
@@ -396,7 +402,8 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
                 id: block.ID,
                 details: block,
                 color: colors.granular,
-                systemId: systemId
+                systemId: systemId,
+                highLevelGroup: highLevelGroupName // Add high-level group name to data
               },
               style: {
                 width: 110 // Fixed width for circles
@@ -408,28 +415,38 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
               block.FeedsInto.forEach(targetId => {
                 // Check if the target exists in our blocks
                 if (allGranularBlocks.has(targetId)) {
-                  edges.push({
+                  // Apply different styling for edges coming from Interaction group
+                  // Create the edge with appropriate styling
+                  let edgeConfig = {
                     id: prefixId(`edge-${block.ID}-${targetId}`),
                     source: granularNodeId,
                     target: prefixId(`gran-${targetId}`),
-                    type: 'bezier',
-                    animated: true,
+                    type: 'bezier', // Use bezier for all lines
+                    animated: isInteractionGroup ? false : true, // No animation for Interaction edges
                     style: { 
                       stroke: '#555', 
                       strokeWidth: 1.5,
                       zIndex: 9999 // Very high z-index for edges
                     },
-                    markerEnd: {
-                      type: 'arrowclosed',
-                      color: '#555',
-                      width: 10, // Smaller arrows
-                      height: 10  // Smaller arrows
-                    },
                     data: {
-                      systemId: systemId
+                      systemId: systemId,
+                      highLevelGroup: highLevelGroupName, // Add high-level group name to edge data
+                      isInteractionEdge: isInteractionGroup // Flag to identify interaction edges
                     },
                     zIndex: 9999 // Very high z-index for edges
-                  });
+                  };
+                  
+                  // Only add arrow marker for non-Interaction edges
+                  if (!isInteractionGroup) {
+                    edgeConfig.markerEnd = {
+                      type: 'arrowclosed',
+                      color: '#555',
+                      width: 10,
+                      height: 10
+                    };
+                  }
+                  
+                  edges.push(edgeConfig);
                 }
               });
             }

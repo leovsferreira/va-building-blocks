@@ -9,7 +9,7 @@ import ReactFlow, {
   Panel
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Box, Button, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Tooltip } from '@mui/material';
 import { CenterFocusStrong, Download } from '@mui/icons-material';
 
 // Import custom node types
@@ -84,7 +84,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);
   
-  // Filter nodes that shouldn't be draggable directly
+  // Filter nodes that shouldn't be draggable directly and process edge styling
   useEffect(() => {
     if (initialNodes) {
       // Make sure only system-group nodes are draggable, not the inner components
@@ -102,7 +102,27 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
       setNodes(filteredNodes);
     }
     
-    if (initialEdges) setEdges(initialEdges);
+    if (initialEdges) {
+      // Process edges to ensure Interaction edges have correct styling
+      const processedEdges = initialEdges.map(edge => {
+        // Find source node to determine if this is an Interaction edge
+        const sourceNode = initialNodes?.find(node => node.id === edge.source);
+        const isInteractionEdge = sourceNode?.data?.highLevelGroup === 'Interaction';
+        
+        if (isInteractionEdge) {
+          // For Interaction edges, completely remove the markerEnd property
+          const { markerEnd, ...edgeWithoutMarker } = edge;
+          return {
+            ...edgeWithoutMarker,
+            animated: false
+          };
+        }
+        
+        return edge; // Keep other edges as they are
+      });
+      
+      setEdges(processedEdges);
+    }
   }, [initialNodes, initialEdges, setNodes, setEdges]);
   
   // Fit view when nodes change (including when a new system is loaded)
@@ -300,12 +320,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
             stroke: '#555',
             zIndex: 9999 // High z-index for edges
           },
-          markerEnd: {
-            type: 'arrowclosed',
-            color: '#555',
-            width: 12,
-            height: 12
-          },
+          // We'll handle markerEnd on a per-edge basis during edge creation
           zIndex: 9999 // High z-index for edges
         }}
         edgesFocusable={true}
