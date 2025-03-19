@@ -425,15 +425,14 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
                     animated: isInteractionGroup ? false : true, // No animation for Interaction edges
                     style: { 
                       stroke: '#555', 
-                      strokeWidth: 1.5,
-                      zIndex: 9999 // Very high z-index for edges
+                      strokeWidth: 1.5
                     },
                     data: {
                       systemId: systemId,
                       highLevelGroup: highLevelGroupName, // Add high-level group name to edge data
                       isInteractionEdge: isInteractionGroup // Flag to identify interaction edges
                     },
-                    zIndex: 9999 // Very high z-index for edges
+                    zIndex: isInteractionGroup ? 500 : 1000 // Lower z-index for Interaction edges, higher for arrows
                   };
                   
                   // Only add arrow marker for non-Interaction edges

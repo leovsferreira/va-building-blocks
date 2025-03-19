@@ -19,17 +19,9 @@ import DragHandleNode from './NodeTypes/DragHandleNode';
 
 // Custom styling to ensure edges are always on top and increase font size globally
 const customStyles = `
-  .react-flow__edge {
-    z-index: 9999 !important;
-  }
+  /* Selected edges should be above all */
   .react-flow__edge.selected {
     z-index: 10000 !important;
-  }
-  .react-flow__edge-path {
-    z-index: 9999 !important;
-  }
-  .react-flow__edge.animated .react-flow__edge-path {
-    z-index: 9999 !important;
   }
   
   /* Global font size increases */
@@ -114,11 +106,16 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           const { markerEnd, ...edgeWithoutMarker } = edge;
           return {
             ...edgeWithoutMarker,
-            animated: false
+            animated: false,
+            zIndex: 500 // Lower z-index for Interaction edges
           };
         }
         
-        return edge; // Keep other edges as they are
+        // For other edges, ensure they have a higher z-index
+        return {
+          ...edge,
+          zIndex: 1000 // Higher z-index for arrows
+        };
       });
       
       setEdges(processedEdges);
@@ -317,11 +314,9 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           animated: true,
           style: {
             strokeWidth: 1.5,
-            stroke: '#555',
-            zIndex: 9999 // High z-index for edges
-          },
-          // We'll handle markerEnd on a per-edge basis during edge creation
-          zIndex: 9999 // High z-index for edges
+            stroke: '#555'
+          }
+          // No zIndex property here - we set it per edge
         }}
         edgesFocusable={true}
         elevateEdgesOnSelect={true}
