@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/va-building-blocks/static/css/main.0a7299e7.css",
-    "main.js": "/va-building-blocks/static/js/main.f9ea8171.js",
+    "main.js": "/va-building-blocks/static/js/main.1897bb43.js",
     "index.html": "/va-building-blocks/index.html",
     "main.0a7299e7.css.map": "/va-building-blocks/static/css/main.0a7299e7.css.map",
-    "main.f9ea8171.js.map": "/va-building-blocks/static/js/main.f9ea8171.js.map"
+    "main.1897bb43.js.map": "/va-building-blocks/static/js/main.1897bb43.js.map"
   },
   "entrypoints": [
     "static/css/main.0a7299e7.css",
-    "static/js/main.f9ea8171.js"
+    "static/js/main.1897bb43.js"
   ]
 }
