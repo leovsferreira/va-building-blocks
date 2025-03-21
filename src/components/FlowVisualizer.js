@@ -1,4 +1,4 @@
-// components/FlowVisualizer.js
+// components/FlowVisualizer.js - Updated with Legend
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -16,12 +16,21 @@ import { CenterFocusStrong, Download } from '@mui/icons-material';
 import GranularNode from './NodeTypes/GranularNode';
 import RemoveButtonNode from './NodeTypes/RemoveButtonNode';
 import DragHandleNode from './NodeTypes/DragHandleNode';
+import EdgeLegend from './EdgeLegend';
 
 // Custom styling to ensure edges are always on top and increase font size globally
 const customStyles = `
-  /* Selected edges should be above all */
+  .react-flow__edge {
+    z-index: 9999 !important;
+  }
   .react-flow__edge.selected {
     z-index: 10000 !important;
+  }
+  .react-flow__edge-path {
+    z-index: 9999 !important;
+  }
+  .react-flow__edge.animated .react-flow__edge-path {
+    z-index: 9999 !important;
   }
   
   /* Global font size increases */
@@ -106,16 +115,11 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           const { markerEnd, ...edgeWithoutMarker } = edge;
           return {
             ...edgeWithoutMarker,
-            animated: false,
-            zIndex: 500 // Lower z-index for Interaction edges
+            animated: false
           };
         }
         
-        // For other edges, ensure they have a higher z-index
-        return {
-          ...edge,
-          zIndex: 1000 // Higher z-index for arrows
-        };
+        return edge; // Keep other edges as they are
       });
       
       setEdges(processedEdges);
@@ -314,9 +318,11 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           animated: true,
           style: {
             strokeWidth: 1.5,
-            stroke: '#555'
-          }
-          // No zIndex property here - we set it per edge
+            stroke: '#555',
+            zIndex: 9999 // High z-index for edges
+          },
+          // We'll handle markerEnd on a per-edge basis during edge creation
+          zIndex: 9999 // High z-index for edges
         }}
         edgesFocusable={true}
         elevateEdgesOnSelect={true}
@@ -379,6 +385,11 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
               </Button>
             </Tooltip>
           </Box>
+        </Panel>
+        
+        {/* Add Edge Legend Panel in the bottom-left corner touching the bottom */}
+        <Panel position="bottom-left" style={{ margin: '0 0 0 20px' }}>
+          <EdgeLegend />
         </Panel>
       </ReactFlow>
     </Box>
