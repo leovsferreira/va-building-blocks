@@ -1,19 +1,16 @@
-/* Title node styling */
 .react-flow__node-titleNode {
   z-index: 1000 !important;
   pointer-events: none;
   color: white;
 }
 
-/* Ensure proper group title spacing and visibility */
 .react-flow__node-group {
   z-index: 0 !important;
 }
 
-/* Ensure node elements are above groups */
 .react-flow__node-granularNode {
   z-index: 10 !important;
-}/* index.css */
+}
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -36,7 +33,6 @@ code {
     monospace;
 }
 
-/* React Flow customizations */
 .react-flow__node {
   border-radius: 3px;
   border: none;
@@ -44,7 +40,6 @@ code {
   width: auto;
 }
 
-/* Drag handle styling */
 .drag-handle {
   cursor: grab;
 }
@@ -65,7 +60,6 @@ code {
   width: auto;
 }
 
-/* Group node styling */
 .react-flow__node-group {
   padding: 0;
   font-size: 12px;
@@ -76,7 +70,6 @@ code {
   z-index: 1;
 }
 
-/* Edge styling */
 .react-flow__edge-path {
   stroke-width: 2;
 }
@@ -108,7 +101,6 @@ code {
   }
 }
 
-/* Minimap styling */
 .react-flow__minimap {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 4px;
@@ -117,7 +109,6 @@ code {
   margin-bottom: 8px;
 }
 
-/* Controls styling */
 .react-flow__controls {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
@@ -137,12 +128,10 @@ code {
   background-color: #f0f0f0;
 }
 
-/* Arrow markers */
 .react-flow__arrowhead {
   fill: #555;
 }
 
-/* Toolbar styling */
 .MuiToolbar-dense {
   min-height: 48px !important;
 }

@@ -1,4 +1,3 @@
-// components/FlowVisualizer.js - Updated with Legend
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -12,13 +11,11 @@ import 'reactflow/dist/style.css';
 import { Box, Button, Tooltip } from '@mui/material';
 import { CenterFocusStrong, Download } from '@mui/icons-material';
 
-// Import custom node types
 import GranularNode from './NodeTypes/GranularNode';
 import RemoveButtonNode from './NodeTypes/RemoveButtonNode';
 import DragHandleNode from './NodeTypes/DragHandleNode';
 import EdgeLegend from './EdgeLegend';
 
-// Custom styling to ensure edges are always on top and increase font size globally
 const customStyles = `
   .react-flow__edge {
     z-index: 9999 !important;
@@ -85,14 +82,10 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || []);
   const flowInstance = useRef(null);
   
-  // Filter nodes that shouldn't be draggable directly and process edge styling
   useEffect(() => {
     if (initialNodes) {
-      // Make sure only system-group nodes are draggable, not the inner components
       const filteredNodes = initialNodes.map(node => {
-        // Only system groups should be draggable
         if (node.type === 'group') {
-          // Only make system-group nodes draggable
           return {
             ...node,
             draggable: node.id.includes('system-group')
@@ -104,14 +97,11 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
     }
     
     if (initialEdges) {
-      // Process edges to ensure Interaction edges have correct styling
       const processedEdges = initialEdges.map(edge => {
-        // Find source node to determine if this is an Interaction edge
         const sourceNode = initialNodes?.find(node => node.id === edge.source);
         const isInteractionEdge = sourceNode?.data?.highLevelGroup === 'Interaction';
         
         if (isInteractionEdge) {
-          // For Interaction edges, completely remove the markerEnd property
           const { markerEnd, ...edgeWithoutMarker } = edge;
           return {
             ...edgeWithoutMarker,
@@ -119,27 +109,23 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           };
         }
         
-        return edge; // Keep other edges as they are
+        return edge;
       });
       
       setEdges(processedEdges);
     }
   }, [initialNodes, initialEdges, setNodes, setEdges]);
   
-  // Fit view when nodes change (including when a new system is loaded)
   useEffect(() => {
     if (flowInstance.current && nodes.length > 0) {
-      // Slight delay to ensure rendering is complete
       setTimeout(() => {
         flowInstance.current.fitView({ padding: 0.2, includeHiddenNodes: true });
       }, 200);
     }
   }, [nodes.length]);
 
-  // Store dragging state
   const [dragState, setDragState] = useState(null);
 
-  // Get all system group nodes
   const getSystemNodes = useCallback(() => {
     return nodes.filter(node => 
       node.type === 'group' && 
@@ -147,11 +133,9 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
     );
   }, [nodes]);
 
-  // Detect if a system would overlap with another system
   const detectCollision = useCallback((draggingNode, newPos) => {
     if (!draggingNode) return false;
     
-    // Calculate the potential new bounding box for the dragging system
     const dragRect = {
       x: newPos.x,
       y: newPos.y,
@@ -159,12 +143,10 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
       height: draggingNode.style.height
     };
     
-    // Get all other system nodes
     const otherSystems = getSystemNodes().filter(
       node => node.id !== draggingNode.id
     );
     
-    // Check for collisions with each other system
     for (const otherSystem of otherSystems) {
       const otherRect = {
         x: otherSystem.position.x,
@@ -173,23 +155,20 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
         height: otherSystem.style.height
       };
       
-      // Simple rectangle-rectangle collision detection
       if (
         dragRect.x < otherRect.x + otherRect.width &&
         dragRect.x + dragRect.width > otherRect.x &&
         dragRect.y < otherRect.y + otherRect.height &&
         dragRect.y + dragRect.height > otherRect.y
       ) {
-        return true; // Collision detected
+        return true;
       }
     }
     
-    return false; // No collision
+    return false;
   }, [getSystemNodes]);
 
-  // Handle node drag start
   const onNodeDragStart = useCallback((event, node) => {
-    // Only track drag state for system group nodes (not high-level or intermediate groups)
     if (node.type === 'group' && node.id.includes('system-group')) {
       setDragState({
         id: node.id,
@@ -200,14 +179,11 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
     }
   }, []);
 
-  // Handle node dragging
   const onNodeDrag = useCallback((event, node, nodes) => {
     if (!dragState || dragState.id !== node.id) return;
     
-    // Check if new position would cause collision
     const hasCollision = detectCollision(node, node.position);
     
-    // If no collision, update the last valid position
     if (!hasCollision) {
       setDragState(prev => ({
         ...prev,
@@ -216,18 +192,15 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
     }
   }, [dragState, detectCollision]);
 
-  // Handle node drag end
   const onNodeDragStop = useCallback((event, node) => {
     if (!dragState || dragState.id !== node.id) return;
     
     const systemId = node.data.systemId;
     if (!systemId) return;
     
-    // Check final position for collision
     const hasCollision = detectCollision(node, node.position);
     
     if (hasCollision) {
-      // Revert to last valid position if collision occurred
       setNodes(prevNodes => 
         prevNodes.map(n => 
           n.id === node.id 
@@ -236,25 +209,21 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
         )
       );
       
-      // Notify App component with the last valid position
       if (onSystemPositionUpdate) {
         onSystemPositionUpdate(systemId, dragState.lastValidPosition);
       }
     } else {
-      // Notify App component with the new position
       if (onSystemPositionUpdate) {
         onSystemPositionUpdate(systemId, node.position);
       }
     }
     
-    // Clear drag state
     setDragState(null);
   }, [dragState, detectCollision, setNodes, onSystemPositionUpdate]);
 
   const onInit = useCallback((reactFlowInstance) => {
     flowInstance.current = reactFlowInstance;
     
-    // Wait a bit for the nodes to render and then fit view
     if (nodes.length > 0) {
       setTimeout(() => {
         reactFlowInstance.fitView({ padding: 0.2, includeHiddenNodes: true });
@@ -277,7 +246,6 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
         backgroundColor: '#fcfcfc',
       });
       
-      // Create a link element to download the image
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = 'system-diagram.png';
@@ -309,7 +277,7 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
         zoomOnScroll={true} 
         panOnScroll={false}
         panOnDrag={true}
-        fitView={false} // Don't automatically fit view, we'll do it in useEffect
+        fitView={false} 
         attributionPosition="bottom-right"
         minZoom={0.1}
         maxZoom={2}
@@ -319,10 +287,9 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
           style: {
             strokeWidth: 1.5,
             stroke: '#555',
-            zIndex: 9999 // High z-index for edges
+            zIndex: 9999
           },
-          // We'll handle markerEnd on a per-edge basis during edge creation
-          zIndex: 9999 // High z-index for edges
+          zIndex: 9999
         }}
         edgesFocusable={true}
         elevateEdgesOnSelect={true}
@@ -335,9 +302,9 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
             if (node.type === 'group') {
               return 'transparent';
             }
-            if (node.data?.level === 'highest') return '#C1B8AA'; // Higher level color
-            if (node.data?.level === 'intermediate') return '#AAB8C1'; // Intermediate color
-            return '#B8AAC1'; // Granular color
+            if (node.data?.level === 'highest') return '#C1B8AA';
+            if (node.data?.level === 'intermediate') return '#AAB8C1';
+            return '#B8AAC1';
           }}
         />
         <Background variant="dots" gap={15} size={1} color="#aaa" />
@@ -396,7 +363,6 @@ const FlowVisualizerComponent = ({ nodes: initialNodes, edges: initialEdges, dim
   );
 };
 
-// Wrap component with the ReactFlowProvider
 const FlowVisualizer = (props) => {
   return (
     <ReactFlowProvider>

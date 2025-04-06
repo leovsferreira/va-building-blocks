@@ -12,7 +12,7 @@ const HighLevelNode = ({ data }) => {
       sx={{ 
         minWidth: 220, 
         maxWidth: 350,
-        backgroundColor: '#C1B8AA', // High level color
+        backgroundColor: '#C1B8AA',
         border: '2px solid #B0A799',
         borderRadius: '8px',
         '&:hover': {

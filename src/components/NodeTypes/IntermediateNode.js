@@ -12,7 +12,7 @@ const IntermediateNode = ({ data }) => {
       sx={{ 
         minWidth: 180, 
         maxWidth: 300,
-        backgroundColor: '#AAB8C1', // Intermediate color (fixed to AAB8C1)
+        backgroundColor: '#AAB8C1',
         border: '2px solid #99A7B0',
         borderRadius: '6px',
         '&:hover': {

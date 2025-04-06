@@ -1,4 +1,3 @@
-// components/NodeTypes/GranularNode.js
 import React, { useState, useCallback } from 'react';
 import { Handle, Position, useReactFlow } from 'reactflow';
 import { Typography, Popover, Paper, Box } from '@mui/material';
@@ -7,13 +6,12 @@ const GranularNode = ({ data, id }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const reactFlowInstance = useReactFlow();
   const details = data.details;
-  const color = '#B8AAC1'; // Granular node color
-  const systemId = data.systemId; // Get system ID for filtering
+  const color = '#B8AAC1';
+  const systemId = data.systemId;
   const hasInputs = details.Inputs && details.Inputs.length > 0;
   const hasOutputs = details.Outputs && details.Outputs.length > 0;
   const feedsInto = details.FeedsInto && details.FeedsInto.length > 0;
 
-  // Calculate a darker shade for border
   const darkerColor = color.replace(/^#/, '');
   const r = parseInt(darkerColor.substr(0, 2), 16);
   const g = parseInt(darkerColor.substr(2, 2), 16);
@@ -22,28 +20,22 @@ const GranularNode = ({ data, id }) => {
 
   const open = Boolean(anchorEl);
 
-  // Function to handle hover (highlight connections)
   const handleMouseEnter = useCallback(() => {
-    // Get all edges and nodes
     const edges = reactFlowInstance.getEdges();
     const nodes = reactFlowInstance.getNodes();
     
-    // Get connected edges (incoming and outgoing)
     const connectedEdges = edges.filter(
       edge => edge.source === id || edge.target === id
     );
     
-    // Get connected node IDs
     const connectedNodeIds = new Set();
     connectedEdges.forEach(edge => {
       connectedNodeIds.add(edge.source);
       connectedNodeIds.add(edge.target);
     });
     
-    // Filter edges to only show those from this system
     const systemEdges = edges.map(edge => {
       if (connectedEdges.some(connectedEdge => connectedEdge.id === edge.id)) {
-        // Highlight connected edge - use appropriate color based on source node's group
         const sourceNode = nodes.find(node => node.id === edge.source);
         const sourceIsInteraction = sourceNode?.data?.highLevelGroup === 'Interaction';
         const edgeHighlightColor = sourceIsInteraction ? '#00ff8d' : '#ff0072';
@@ -57,11 +49,9 @@ const GranularNode = ({ data, id }) => {
             opacity: 1,
             zIndex: 10000
           },
-          // Keep the edge animation setting based on whether it's from an Interaction node
           animated: sourceIsInteraction ? false : true,
         };
         
-        // Only add markerEnd for non-Interaction edges
         if (!sourceIsInteraction && edge.markerEnd) {
           highlightedEdge.markerEnd = {
             ...edge.markerEnd,
@@ -72,32 +62,27 @@ const GranularNode = ({ data, id }) => {
         return highlightedEdge;
       }
       
-      // Only show edges from this system
       if (edge.data?.systemId === systemId) {
         return {
           ...edge,
           style: {
             ...edge.style,
-            opacity: 0.15, // Dim edges in this system (changed from 0 to 0.15 for better visibility)
+            opacity: 0.15,
             zIndex: 1
           },
           animated: false
         };
       }
       
-      // Keep other system edges as they are
       return edge;
     });
     
     reactFlowInstance.setEdges(systemEdges);
     
-    // Also highlight connected nodes, but only in this system
     reactFlowInstance.setNodes(
       nodes.map(node => {
-        // Only modify nodes in this system
         if (node.data?.systemId === systemId) {
           if (node.id === id || (node.type === 'granularNode' && connectedNodeIds.has(node.id))) {
-            // This is either the current node or a connected node
             return {
               ...node,
               style: {
@@ -109,7 +94,6 @@ const GranularNode = ({ data, id }) => {
           }
           
           if (node.type === 'granularNode') {
-            // Dim other granular nodes that aren't connected
             return {
               ...node,
               style: {
@@ -120,19 +104,15 @@ const GranularNode = ({ data, id }) => {
           }
         }
         
-        // Don't change other node types or nodes from other systems
         return node;
       })
     );
   }, [id, reactFlowInstance, systemId]);
 
-  // Function to handle mouse leave (reset edge styles)
   const handleMouseLeave = useCallback(() => {
-    // Get all edges and nodes
     const edges = reactFlowInstance.getEdges();
     const nodes = reactFlowInstance.getNodes();
     
-    // Reset all edges to original style based on their source node
     reactFlowInstance.setEdges(
       edges.map(edge => {
         const sourceNode = nodes.find(node => node.id === edge.source);
@@ -149,7 +129,6 @@ const GranularNode = ({ data, id }) => {
           animated: isInteractionEdge ? false : true
         };
         
-        // Only add markerEnd for non-Interaction edges
         if (!isInteractionEdge && (edge.markerEnd || !isInteractionEdge)) {
           resetEdge.markerEnd = {
             type: 'arrowclosed',
@@ -163,7 +142,6 @@ const GranularNode = ({ data, id }) => {
       })
     );
     
-    // Reset all nodes
     reactFlowInstance.setNodes(
       nodes.map(node => {
         if (node.type === 'granularNode') {
@@ -180,12 +158,10 @@ const GranularNode = ({ data, id }) => {
     );
   }, [reactFlowInstance]);
 
-  // Function to handle click (show tooltip)
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // Function to close tooltip
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -230,7 +206,7 @@ const GranularNode = ({ data, id }) => {
             sx={{ 
               fontWeight: 600, 
               color: '#333',
-              fontSize: '0.85rem', // Increased font size
+              fontSize: '0.85rem',
               lineHeight: 1.2,
               wordBreak: 'break-word',
               padding: '0 5px'
@@ -242,7 +218,7 @@ const GranularNode = ({ data, id }) => {
           <Typography 
             variant="caption" 
             sx={{ 
-              fontSize: '0.75rem', // Increased font size
+              fontSize: '0.75rem',
               color: '#555',
               position: 'absolute',
               bottom: '8px'
@@ -345,8 +321,8 @@ const GranularNode = ({ data, id }) => {
         id="out" 
         style={{ 
           background: '#555', 
-          width: '8px', // Smaller handle
-          height: '8px', // Smaller handle
+          width: '8px',
+          height: '8px',
           border: '2px solid #fff',
           zIndex: 10
         }}
@@ -357,8 +333,8 @@ const GranularNode = ({ data, id }) => {
         id="in" 
         style={{ 
           background: '#555', 
-          width: '8px', // Smaller handle
-          height: '8px', // Smaller handle
+          width: '8px',
+          height: '8px',
           border: '2px solid #fff',
           zIndex: 10
         }}

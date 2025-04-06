@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Box, 
@@ -17,31 +16,26 @@ import { Menu, Upload, Close } from '@mui/icons-material';
 import FlowVisualizer from './components/FlowVisualizer';
 import processJsonToFlow from './utils/jsonToFlow';
 
-// Create a unique ID without requiring uuid package
 const generateId = () => `id-${Math.random().toString(36).substring(2, 9)}`;
 
-// Constants for system layout
-const SYSTEM_PADDING_Y = 200; // Padding between systems vertically
+const SYSTEM_PADDING_Y = 200;
 const SYSTEM_START_X = 50;
 const SYSTEM_START_Y = 50;
 
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [systems, setSystems] = useState([]); // Array of systems
+  const [systems, setSystems] = useState([]);
   const [jsonError, setJsonError] = useState('');
   const [jsonInput, setJsonInput] = useState('');
   const drawerWidth = 350;
   
-  // Store the overall canvas dimensions
   const [canvasDimensions, setCanvasDimensions] = useState({
     width: 2000,
     height: 2000
   });
 
-  // Combined nodes and edges from all systems for visualization
   const [combinedFlow, setCombinedFlow] = useState({ nodes: [], edges: [] });
 
-  // Update combined flow whenever systems change
   useEffect(() => {
     console.log("Systems updated:", systems.length);
     
@@ -50,27 +44,22 @@ function App() {
       return;
     }
     
-    // Calculate new canvas dimensions based on all systems
     let maxWidth = 0;
     let totalHeight = SYSTEM_START_Y;
     
-    // First gather all nodes and edges and update canvas dimensions
     const allNodes = [];
     const allEdges = [];
     
     systems.forEach((system, index) => {
       console.log(`System ${system.id} at position:`, system.position);
       
-      // Map positions of all nodes before adding them
       const mappedNodes = system.nodes.map(node => {
-        // Make a copy of the node to avoid modifying the original
         return { ...node };
       });
       
       allNodes.push(...mappedNodes);
       allEdges.push(...system.edges);
       
-      // Update canvas dimensions
       maxWidth = Math.max(maxWidth, system.position.x + system.width);
       totalHeight = system.position.y + system.height + SYSTEM_PADDING_Y;
     });
@@ -80,10 +69,9 @@ function App() {
       edges: allEdges
     });
     
-    // Update canvas dimensions
     setCanvasDimensions({
-      width: Math.max(2000, maxWidth + 200), // Add some margin
-      height: Math.max(2000, totalHeight)    // Add some margin
+      width: Math.max(2000, maxWidth + 200),
+      height: Math.max(2000, totalHeight)   
     });
     
   }, [systems]);
@@ -127,13 +115,11 @@ function App() {
     }
   };
 
-  // Calculate position for a new system based on existing systems
   const calculateSystemPosition = () => {
     if (systems.length === 0) {
       return { x: SYSTEM_START_X, y: SYSTEM_START_Y };
     }
     
-    // Find the bottom-most system
     let maxBottom = 0;
     systems.forEach(system => {
       const bottom = system.position.y + system.height;
@@ -142,24 +128,20 @@ function App() {
       }
     });
     
-    // Position the new system below the bottom-most existing system
     return { 
       x: SYSTEM_START_X, 
       y: maxBottom + SYSTEM_PADDING_Y 
     };
   };
 
-  // Function to clear a specific system without repositioning others
   const clearSystem = useCallback((systemId) => {
     console.log('Clearing system', systemId);
     
-    // Simply remove the specified system without repositioning others
     setSystems(prevSystems => 
       prevSystems.filter(system => system.id !== systemId)
     );
   }, []);
   
-  // Handler for system position updates from drag and drop
   const handleSystemPositionUpdate = useCallback((systemId, newPosition) => {
     console.log(`Updating system ${systemId} position to:`, newPosition);
     
@@ -167,10 +149,8 @@ function App() {
       prevSystems.map(system => {
         if (system.id !== systemId) return system;
         
-        // Update the system position
         const updatedNodes = system.nodes.map(node => {
           if (node.id.endsWith('system-group')) {
-            // Update system group node position
             return {
               ...node,
               position: newPosition
@@ -179,7 +159,6 @@ function App() {
           return node;
         });
         
-        // Return updated system
         return {
           ...system,
           position: newPosition,
@@ -195,17 +174,13 @@ function App() {
       return;
     }
     
-    // Create a unique ID for this system
     const systemId = generateId();
     
-    // Calculate position for the new system
     const position = calculateSystemPosition();
     console.log(`Calculated position for new system: (${position.x}, ${position.y})`);
     
-    // Process the JSON with the position
     const processedData = processJsonToFlow(jsonData, () => clearSystem(systemId), position, systemId);
     
-    // Add the new system to our list
     setSystems(prevSystems => [
       ...prevSystems, 
       {
@@ -226,7 +201,7 @@ function App() {
 
   // Get a combined name from all systems
   const getCombinedSystemName = () => {
-    return 'VA Building Blocks';
+    return 'VA-Blueprint';
   };
 
   return (

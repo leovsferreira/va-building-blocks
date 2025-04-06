@@ -1,4 +1,3 @@
-// components/NodeTypes/DragHandleNode.js
 import React from 'react';
 import { useReactFlow } from 'reactflow';
 
@@ -20,10 +19,10 @@ const DragHandleNode = ({ data }) => {
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
         border: '1px solid rgba(0,0,0,0.1)',
         position: 'absolute',
-        top: '-12px', // Half of height to align with the corner
-        left: '-12px', // Half of width to align with the corner
+        top: '-12px',
+        left: '-12px',
         zIndex: 10000,
-        pointerEvents: 'all' // Force pointer events to be enabled
+        pointerEvents: 'all'
       }}
       onMouseOver={(e) => {
         e.currentTarget.style.backgroundColor = '#e8e8e8';

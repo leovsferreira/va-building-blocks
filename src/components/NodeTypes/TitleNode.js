@@ -1,4 +1,3 @@
-// components/NodeTypes/TitleNode.js
 import React from 'react';
 import { Typography } from '@mui/material';
 
@@ -15,10 +14,10 @@ const TitleNode = ({ data }) => {
       borderTopLeftRadius: isHighest ? '8px' : '6px',
       borderBottomRightRadius: isHighest ? '8px' : '6px',
       backgroundColor: color,
-      zIndex: 5000, // Much higher z-index to ensure visibility
+      zIndex: 5000,
       boxShadow: '1px 1px 3px rgba(0,0,0,0.2)',
-      transform: 'translate(0, 0)', // No negative transform
-      pointerEvents: 'none', // Ensure it doesn't interfere with interactions
+      transform: 'translate(0, 0)',
+      pointerEvents: 'none',
       minWidth: '120px'
     }}>
       <Typography 

@@ -1,4 +1,3 @@
-// components/EdgeLegend.js
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Tooltip, IconButton, Fade } from '@mui/material';
 import { Help, ExpandMore, ExpandLess } from '@mui/icons-material';
@@ -11,7 +10,7 @@ const EdgeLegend = () => {
       elevation={3} 
       sx={{ 
         borderRadius: 2,
-        width: 340, // Increased fixed width
+        width: 340,
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         transition: 'all 0.3s ease',
         marginBottom: 10,
