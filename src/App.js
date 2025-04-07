@@ -169,8 +169,8 @@ function App() {
   }, []);
 
   const processJsonData = useCallback((jsonData) => {
-    if (!jsonData || !jsonData.HighestLevelBlocks) {
-      setJsonError('Invalid JSON structure: Missing HighestLevelBlocks');
+    if (!jsonData || (!jsonData.HighestLevelBlocks && !jsonData.HighBlocks)) {
+      setJsonError('Invalid JSON structure: Missing HighestLevelBlocks or HighBlocks');
       return;
     }
     
@@ -185,7 +185,7 @@ function App() {
       ...prevSystems, 
       {
         id: systemId,
-        name: jsonData.SystemName || 'Unnamed System',
+        name: jsonData.SystemName || jsonData.PaperTitle || 'Unnamed System',
         nodes: processedData.nodes,
         edges: processedData.edges,
         position,
@@ -194,14 +194,14 @@ function App() {
       }
     ]);
     
-    // Clear input and close drawer
     setJsonInput('');
     setDrawerOpen(false);
   }, [clearSystem, systems]);
 
-  // Get a combined name from all systems
   const getCombinedSystemName = () => {
-    return 'VA-Blueprint';
+    if (systems.length === 0) return 'VA-Blueprint';
+    if (systems.length === 1) return systems[0].name;
+    return `Multi-System View (${systems.length})`;
   };
 
   return (

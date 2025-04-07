@@ -1,5 +1,5 @@
 const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, systemId = 'system') => {
-  if (!jsonData || !jsonData.HighestLevelBlocks) {
+  if (!jsonData || (!jsonData.HighestLevelBlocks && !jsonData.HighBlocks)) {
     return { nodes: [], edges: [], width: 0, height: 0 };
   }
 
@@ -39,9 +39,12 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
   
   const prefixId = (id) => `${systemId}-${id}`;
   
+  const highestLevelBlocks = jsonData.HighestLevelBlocks || jsonData.HighBlocks;
+  
   const allGranularBlocks = new Map();
-  jsonData.HighestLevelBlocks.forEach(highBlock => {
-    highBlock.IntermediateBlocks?.forEach(intBlock => {
+  highestLevelBlocks.forEach(highBlock => {
+    const intBlocksKey = 'IntermediateBlocks';
+    highBlock[intBlocksKey]?.forEach(intBlock => {
       intBlock.GranularBlocks?.forEach(granBlock => {
         allGranularBlocks.set(granBlock.ID, granBlock);
       });
@@ -56,7 +59,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
   const highestLevelYPosition = 50;
   const highestLevelXGap = 150;
   
-  jsonData.HighestLevelBlocks.forEach((highBlock) => {
+  highestLevelBlocks.forEach((highBlock) => {
     const intermediateDetails = [];
     
     if (highBlock.IntermediateBlocks) {
@@ -112,7 +115,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
       padding: 0
     },
     data: { 
-      label: jsonData.SystemName || 'System',
+      label: jsonData.SystemName || jsonData.PaperTitle || 'System',
       level: 'system',
       systemId: systemId
     },
@@ -143,7 +146,7 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
       fontSize: '1rem' 
     },
     data: {
-      label: jsonData.SystemName || 'System'
+      label: jsonData.SystemName || jsonData.PaperTitle || 'System'
     },
     sourcePosition: null,
     targetPosition: null
@@ -193,8 +196,8 @@ const processJsonToFlow = (jsonData, onRemoveSystem, position = { x: 0, y: 0 }, 
   
   highestLevelXPosition = 50;
   
-  jsonData.HighestLevelBlocks.forEach((highBlock, highIndex) => {
-    const highLevelGroupName = highBlock.HighestLevelBlockName;
+  highestLevelBlocks.forEach((highBlock, highIndex) => {
+    const highLevelGroupName = highBlock.HighestLevelBlockName || highBlock.HighBlockName;
     const isInteractionGroup = highLevelGroupName === 'Interaction';
     
     const intermediateDetails = [];
