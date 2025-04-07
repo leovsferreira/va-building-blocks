@@ -200,8 +200,7 @@ function App() {
 
   const getCombinedSystemName = () => {
     if (systems.length === 0) return 'VA-Blueprint';
-    if (systems.length === 1) return systems[0].name;
-    return `Multi-System View (${systems.length})`;
+    return `VA-Blueprint (${systems.length})`;
   };
 
   return (
